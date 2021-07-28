@@ -1,0 +1,257 @@
+---
+title: "Water Potability (CYO Project (HarvardX))"
+author: "Ghodsieh Ghanbari"
+date: "7/27/2021"
+output: pdf_document
+toc: true
+number_sections: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+Current project is related to the Choose Your Own project of the Capstone course of Harvardx data science professional certificate.
+I decided to use water quality data set for this project.
+This data set contains several attributes of water including PH, hardness, solids, Chloramines, Sulfate, Conductivity, Organic_carbon, Trihalomethanes, and Turbidity which can determine if water is potable or not.
+Based on the data, we are dealing with a binary classification data. Therefore, the aim of this project is to perform some machine learning models to predict whether water is drinkable or not by having some characteristics of water. 
+
+## Reading the data set and applying required packages
+
+```{r ,echo=TRUE}
+maindata <-read.csv("water_potability.csv")
+```
+
+```{r ,echo=FALSE}
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(dplyr)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(ggplot2)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+
+
+library(dplyr)
+library(caret)
+library(ggplot2)
+library(tidyverse)
+
+
+```
+
+# Analysis and methods
+
+## Data analysis
+We explore data set to see its variable names and variable classes.
+```{r, echo=FALSE}
+head(maindata)
+```
+
+Variable names:
+```{r, echo=FALSE}
+names(maindata)
+```
+
+Structure of the data:
+```{r, echo=TRUE }
+str(maindata)
+```
+
+Exploring if there are any missing values:
+```{r, echo=FALSE}
+#Exploring if there are any missing values
+sapply(maindata, function(x) sum(is.na(x)))
+```
+From the above results, we see that ph, sulfate, and Trihalomethanes columns have missing values, so we remove related rows.
+
+Dropping missing values:
+```{r}
+maindata <- na.omit(maindata)
+```
+
+Changing Potability columns values from 0 and 1 to "potable", and "non-potable" and making them as factor:
+```{r}
+# Changing Potability columns values from 0 and 1 to "potable", and "non-potable" and making them as factor
+data <- maindata %>% mutate(Potability=as.factor(ifelse(Potability==1, "potable","non-potable")))
+```
+
+Exploring the variables summary:
+```{r}
+summary(data)
+```
+Creating train and test data:
+
+```{r}
+#Creating train and test data
+set.seed(2007)
+test_index <- createDataPartition(y = data$Potability, times = 1, p = 0.2, list = FALSE)
+train <- data[-test_index,]
+test <- data[test_index,]
+```
+
+## Data visualization
+
+Bar plot of the data set to see the number of data in potable and non-potable classes
+
+```{r, echo=FALSE}
+#Bar plot of the data set to see the count of potable and non-potable classes
+data %>% ggplot(aes(Potability)) +geom_bar(width = 0.8,color="white") +ggtitle("Bar plot of potable and non-potable classes")
+```
+
+From the above bar plot, it is seen that we have more data in non-potable class than potable one. About 1100 in non-potable class, and 850 in potable class.
+
+
+Exploring the distribution of "ph" variable for potable and non-potable classes:
+
+```{r, echo=FALSE}
+# histogram of "ph" variable
+train %>% ggplot(aes(ph,fill=Potability)) + geom_histogram(bins=30, color="white") + ggtitle("Histogram of PH attribute for potable and non-potable classes")
+```
+From the above graph we can state that both potable and non-potable classes have the same almost normal distribution with more data in non-potable class.
+
+Now, we do the same for the other variables
+
+Hardness variable distribution:
+
+```{r, echo=FALSE, warning=FALSE}
+# histogram of "Hardness" variable
+train %>% ggplot(aes(Hardness)) + geom_histogram(bins=30,color="white")+ facet_grid(~ Potability) + ggtitle("Histogram of Hardness attribute for potable and non-potable classes")
+```
+
+Solids variable distribution:
+
+```{r, echo=FALSE, warning=FALSE}
+# histogram of "Solids" variable
+train %>% ggplot(aes(Solids,fill=Potability)) + geom_histogram(bins=30,color="white") + ggtitle("Histogram of Solids attribute for potable and non-potable classes")
+```
+
+Chloramines variable distribution:
+
+```{r, echo=FALSE, warning=FALSE}
+# histogram of "Chloramines" variable
+train %>% ggplot(aes(Chloramines,fill=Potability)) + geom_histogram(bins=30,color="white") + ggtitle("Histogram of Chloramines attribute for potable and non-potable classes")
+```
+
+Sulfate variable distribution:
+
+```{r, echo=FALSE, warning=FALSE}
+# histogram of "Sulfate" variable
+train %>% ggplot(aes(Sulfate,fill=Potability)) + geom_histogram(bins=30, color="white") + ggtitle("Histogram of Sulfate attribute for potable and non-potable classes")
+```
+
+Conductivity variable distribution:
+
+```{r, echo=FALSE, warning=FALSE}
+# histogram of "Conductivity" variable
+train %>% ggplot(aes(Conductivity,fill=Potability)) + geom_histogram(bins=30, color="white") + ggtitle("Histogram of Conductivity attribute for potable and non-potable classes")
+```
+
+Organic_carbon variable distribution:
+
+```{r, echo=FALSE, warning=FALSE}
+# histogram of "Organic_carbon" variable
+train %>% ggplot(aes(Organic_carbon,fill=Potability)) + geom_histogram(bins=30, color="white") + ggtitle("Histogram of Organic_carbon attribute for potable and non-potable classes")
+```
+
+Trihalomethanes variable distribution:
+
+```{r, echo=FALSE, warning=FALSE}
+# histogram of "Trihalomethanes" variable
+train %>% ggplot(aes(Trihalomethanes,fill=Potability)) + geom_histogram(bins=30, color="white") + ggtitle("Histogram of Trihalomethanes attribute for potable and non-potable classes")
+```
+
+Turbidity variable distribution:
+
+```{r, echo=FALSE, warning=FALSE}
+# histogram of "Turbidity" variable
+train %>% ggplot(aes(Turbidity,fill=Potability)) + geom_histogram(bins=30, color="white") + ggtitle("Histogram of Turbidity attribute for potable and non-potable classes")
+```
+
+Finding the correlation between variables
+
+```{r correlations, echo=FALSE}
+# Finding correlation between numeric variables
+cor(data[,1:ncol(data)-1])
+```
+If we consider 0.7 as a cutoff, there are no strong correlation between the variables.
+
+## Models
+We will train 3 models which are Bayesian Generalized Linear, K-Nearest Neighbours, and Random Forest.
+
+### Bayesian Generalized Linear Model
+The first model that I train is Bayesian Generalized Linear Model. I provide the confusion matrix results.
+```{r bglm_model, echo=FALSE}
+# Bayesian Generalized Linear Model
+fit_logr <- train(Potability ~ .,data = train, method = "bayesglm")
+
+predictions_logr <- predict(fit_logr, test)
+```
+
+Confusion matrix results:
+
+```{r bglm-confusion_Matrix, echo=FALSE}
+
+ConfM_bglm <- confusionMatrix(predictions_logr,test$Potability, positive = "potable")
+ConfM_bglm
+
+# putting sensitivity, specificity, and accuracy of the models in a tibble
+results <- tibble(Method = "Bayesian GLM", Accuracy = ConfM_bglm$overall['Accuracy'], Sensitivity=ConfM_bglm$byClass['Sensitivity'] ,Specifity=ConfM_bglm$byClass['Specificity'])
+
+```
+
+### K-Nearest Neighbours model
+For the second model, I use K-Nearest Neighbours.
+```{r knn-model, info=FALSE, echo=FALSE}
+
+#K-Nearest Neighbours
+fit_knn <- train(Potability ~ ., data = train, method = "knn", preProcess=c('knnImpute'))
+
+predictions_knn <-  predict(fit_knn, test)
+```
+
+Confusion matrix results:
+
+```{r knn_confusion_Matrix, echo=FALSE }
+
+conM_knn <- confusionMatrix(predictions_knn,test$Potability, positive = "potable")
+conM_knn
+
+# putting sensitivity, specificity, and accuracy of the models in a tibble
+results <- bind_rows(results, tibble(Method = "K-Nearest Neighbours", Accuracy = conM_knn$overall['Accuracy'], Sensitivity=conM_knn$byClass['Sensitivity'] ,Specifity=conM_knn$byClass['Specificity']))
+
+```
+
+### Random Forest model
+The final model being trained is Random forest.
+```{r, rf_model, echo=FALSE}
+#Random Forest model
+fit_rf <- train(Potability ~ ., data = train, method = "rf")
+
+predictions_rf <-  predict(fit_rf, test)
+```
+
+Confusion matrix results:
+
+```{r rf_confusion_Matrix, echo=FALSE }
+
+confM_rf <- confusionMatrix(predictions_rf,test$Potability, positive = "potable")
+confM_rf
+
+# putting sensitivity, specificity, and accuracy of the models in a tibble
+results <- bind_rows(results, tibble(Method = "Random Forest", Accuracy = confM_rf$overall['Accuracy'], Sensitivity=confM_rf$byClass['Sensitivity'] ,Specifity=confM_rf$byClass['Specificity']))
+
+```
+
+# Results
+In the following table, I have provided the results obtained by 3 models in the previous section.
+
+```{r}
+# Table of models results
+results <-results %>% arrange(Accuracy)
+results %>% knitr::kable("pipe")
+```
+
+Based on the table, since the specificity of the all models are much higher than sensitivity, we can claim that the models do better in predicting non-potable water when water is actually non-potable, and there are many false negative results.
+
+
+# Conclusion
+In the current project, we explored water quality data set as a classification problem. Several machine learning models were trained and were applied to predict potability of the water in the test data set. Based on the results, we can state that there is still room for improvements and other machine learning models may result in better predictions compared to these 3 applied models.
+
